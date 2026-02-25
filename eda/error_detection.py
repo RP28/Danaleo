@@ -13,6 +13,7 @@ class ErrorDetection(EdaModule):
         self._rows_drop_threshold_percentage = params.get("rows_drop_threshold", 0.3)
         self._columns_drop_threshold_percentage = params.get("columns_drop_threshold", 0.3)
         self._danaleo_config = load_danaleo_json()
+        self._value_convertor = None
 
     @override
     def analyze(self):
@@ -64,6 +65,7 @@ class ErrorDetection(EdaModule):
 
     @override
     def policy(self, analysis, **kwargs):
+        self._value_convertor = kwargs.get("value_convertor", None)
         for column, data_type in self._params.get("columns", {}).items():
             match data_type:
                 case ColumnDataType.NUMERIC.value:
