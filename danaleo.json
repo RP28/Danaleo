@@ -1,6 +1,6 @@
 {
     "eda": {
-        "sample_size": 5,
+        "sample_size": 30,
         "numeric_semantic_types": {
             "duration": {
                 "patterns": [
@@ -38,6 +38,85 @@
                 "unit_map": {
                     "%": 0.01,
                     "percent": 0.01
+                }
+            },
+            "weight": {
+                "patterns": [
+                    "(?P<value>\\d+(\\.\\d+)?)\\s*(kg|kilograms?|g|grams?|lb|lbs|pounds?|oz|ounces?|tonnes?|tons?)"
+                ],
+                "unit_map": {
+                    "kg": 1,
+                    "kilogram": 1,
+                    "kilograms": 1,
+                    "g": 0.001,
+                    "gram": 0.001,
+                    "grams": 0.001,
+                    "lb": 0.453592,
+                    "lbs": 0.453592,
+                    "pound": 0.453592,
+                    "pounds": 0.453592,
+                    "oz": 0.0283495,
+                    "ounce": 0.0283495,
+                    "ounces": 0.0283495,
+                    "tonne": 1000,
+                    "tonnes": 1000,
+                    "ton": 907.185,
+                    "tons": 907.185
+                }
+            },
+            "speed": {
+                "patterns": [
+                    "(?P<value>\\d+(\\.\\d+)?)\\s*(km/h|kmh|mph|m/s)"
+                ],
+                "unit_map": {
+                    "km/h": 0.277778,
+                    "kmh": 0.277778,
+                    "mph": 0.44704,
+                    "m/s": 1
+                }
+            },
+            "volume": {
+                "patterns": [
+                    "(?P<value>\\d+(\\.\\d+)?)\\s*(liters?|l|gallons?|gal|ml|milliliters?)"
+                ],
+                "unit_map": {
+                    "liters": 1,
+                    "liter": 1,
+                    "l": 1,
+                    "gallons": 3.78541,
+                    "gallon": 3.78541,
+                    "gal": 3.78541,
+                    "ml": 0.001,
+                    "milliliters": 0.001,
+                    "milliliter": 0.001
+                }
+            },
+            "currency": {
+                "patterns": [
+                    "(?P<value>\\d+(\\.\\d+)?)[\\s]?(\\$|usd|eur|gbp|inr|jpy|cad|aud)"
+                ],
+                "unit_map": {
+                    "$": 1,
+                    "usd": 1,
+                    "eur": 1,
+                    "gbp": 1,
+                    "inr": 1,
+                    "jpy": 1,
+                    "cad": 1,
+                    "aud": 1
+                }
+            },
+            "frequency": {
+                "patterns": [
+                    "(?P<value>\\d+(\\.\\d+)?)\\s*(hz|hertz|khz|kilohertz|mhz|megahertz)"
+                ],
+                "unit_map": {
+                    "hz": 1,
+                    "hertz": 1,
+                    "khz": 1000,
+                    "kilohertz": 1000,
+                    "mhz": 1000000,
+                    "megahertz": 1000000
                 }
             }
         }
