@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import pandas as pd
-from constants import UserErrorMessages
+from .constants import UserErrorMessages
 
 class EdaModule(ABC):
 
@@ -10,18 +10,14 @@ class EdaModule(ABC):
         
         if params is None and not isinstance(params, dict):
             raise ValueError(UserErrorMessages.PARAMS_NOT_DICT.value)
-        
-        self._validate_params()
-        
+        # assign before validation so _validate_params can access params/data
         self._params = params
         self._data = data
+
+        self._validate_params()
     
     @abstractmethod
     def analyze(self):
-        pass
-
-    @abstractmethod
-    def policy(self, analysis, **kwargs):
         pass
 
     @abstractmethod

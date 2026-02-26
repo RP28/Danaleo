@@ -1,6 +1,14 @@
-from utils import semantic_parser
+from eda.error_detection import ErrorDetection
+from eda.constants import ColumnDataType
 import pandas as pd
 
 df = pd.read_csv("test_file.csv")
-parsed_values = semantic_parser.parse_column(df["Data"], sample_values=df["Data"])
-print(parsed_values)
+
+# Configure ErrorDetection to analyze the 'Data' column as numeric
+params = {"columns": {"Data": ColumnDataType.NUMERIC.value}}
+ed = ErrorDetection(params, df)
+
+analysis = ed.analyze()
+print(analysis)
+converted = ed.act(analysis)
+print(converted)

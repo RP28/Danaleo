@@ -1,6 +1,6 @@
 {
     "eda": {
-        "sample_size": 30,
+        "sample_size": 5,
         "numeric_semantic_types": {
             "duration": {
                 "patterns": [
