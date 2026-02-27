@@ -83,22 +83,21 @@ class ErrorDetection(EdaModule):
         ``value_convertor`` may be supplied via kwargs for custom behaviour.
         """
         self._value_convertor = kwargs.get("value_convertor", None)
-        df = self._data.copy()
 
         for column, data_type in self._params.get("columns", {}).items():
             col_analysis = analysis.get(column, {})
             match data_type:
                 case ColumnDataType.NUMERIC.value:
-                    df[column] = self._act_numeric(column, col_analysis)
+                    self._data[column] = self._act_numeric(column, col_analysis)
                 case ColumnDataType.CATEGORICAL.value:
-                    df[column] = self._act_categorical(column, col_analysis)
+                    self._data[column] = self._act_categorical(column, col_analysis)
                 case ColumnDataType.DATE.value:
-                    df[column] = self._act_date(column, col_analysis)
+                    self._data[column] = self._act_date(column, col_analysis)
                 case ColumnDataType.BOOLEAN.value:
-                    df[column] = self._act_boolean(column, col_analysis)
+                    self._data[column] = self._act_boolean(column, col_analysis)
                 case _:
                     raise ValueError(DebuggerErrorMessages.UNSUPPORTED_DATA_TYPE.value)
-        return df
+        return self._data.drop_duplicates()
                 
     def _act_numeric(self, column, analysis):
         """Apply a numeric fix/conversion after analysis has run.
