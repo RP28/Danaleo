@@ -18,18 +18,24 @@ class ErrorDetection(EdaModule):
 
     @override
     def analyze(self):
+        """Run analysis for every column specified in params and merge results.
+
+        Returns a dict mapping each column name to its individual analysis output.
+        """
+        results = {}
         for column, data_type in self._params.get("columns", {}).items():
             match data_type:
                 case ColumnDataType.NUMERIC.value:
-                    return self._analyze_numeric(column)
+                    results.update(self._analyze_numeric(column))
                 case ColumnDataType.CATEGORICAL.value:
-                    return self._analyze_categorical(column)
+                    results.update(self._analyze_categorical(column))
                 case ColumnDataType.DATE.value:
-                    return self._analyze_date(column)
+                    results.update(self._analyze_date(column))
                 case ColumnDataType.BOOLEAN.value:
-                    return self._analyze_boolean(column)
+                    results.update(self._analyze_boolean(column))
                 case _:
                     raise ValueError(DebuggerErrorMessages.UNSUPPORTED_DATA_TYPE.value)
+        return results
                 
     def _analyze_numeric(self, column):
         series = self._data[column]
@@ -45,7 +51,7 @@ class ErrorDetection(EdaModule):
         converted = pd.to_numeric(series, errors="coerce")
         non_convertibles = series[converted.isna() & series.notna()]
         sample_non_convertible_values = random.sample(non_convertibles.tolist(), 
-                                                      min(self._danaleo_config["eda"]["sample_size"], len(non_convertibles)))
+                                        min(self._danaleo_config["eda"]["sample_size"], len(non_convertibles)))
         return {
             column: {
                 "sample_non_convertible_values": sample_non_convertible_values
@@ -71,19 +77,28 @@ class ErrorDetection(EdaModule):
 
     @override
     def act(self, analysis, **kwargs):
+        """Apply corrective actions to all specified columns and return a new DataFrame.
+
+        `analysis` should be the output of :meth:`analyze`.  An optional
+        ``value_convertor`` may be supplied via kwargs for custom behaviour.
+        """
         self._value_convertor = kwargs.get("value_convertor", None)
+        df = self._data.copy()
+
         for column, data_type in self._params.get("columns", {}).items():
+            col_analysis = analysis.get(column, {})
             match data_type:
                 case ColumnDataType.NUMERIC.value:
-                    return self._act_numeric(column, analysis[column])
+                    df[column] = self._act_numeric(column, col_analysis)
                 case ColumnDataType.CATEGORICAL.value:
-                    return self._act_categorical(column, analysis[column])
+                    df[column] = self._act_categorical(column, col_analysis)
                 case ColumnDataType.DATE.value:
-                    return self._act_date(column, analysis[column])
+                    df[column] = self._act_date(column, col_analysis)
                 case ColumnDataType.BOOLEAN.value:
-                    return self._act_boolean(column, analysis[column])
+                    df[column] = self._act_boolean(column, col_analysis)
                 case _:
                     raise ValueError(DebuggerErrorMessages.UNSUPPORTED_DATA_TYPE.value)
+        return df
                 
     def _act_numeric(self, column, analysis):
         """Apply a numeric fix/conversion after analysis has run.
