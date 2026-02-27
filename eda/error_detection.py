@@ -22,8 +22,8 @@ class ErrorDetection(EdaModule):
             match data_type:
                 case ColumnDataType.NUMERIC.value:
                     return self._analyze_numeric(column)
-                case ColumnDataType.STRING.value:
-                    return self._analyze_string(column)
+                case ColumnDataType.CATEGORICAL.value:
+                    return self._analyze_categorical(column)
                 case ColumnDataType.DATE.value:
                     return self._analyze_date(column)
                 case ColumnDataType.BOOLEAN.value:
@@ -52,8 +52,16 @@ class ErrorDetection(EdaModule):
             }
         }
 
-    def _analyze_string(self, column):
-        pass
+    def _analyze_categorical(self, column):
+        """Return percentage frequencies for each category in the given column.
+
+        Result JSON format:
+            { column: {"frequencies": {cat1: pct1, cat2: pct2, ...}} }
+        """
+        series = self._data[column]
+        counts = series.value_counts(normalize=True, dropna=False)
+        pct_dict = {str(idx): round(float(val), 3) for idx, val in counts.items()}
+        return {column: {"frequencies": pct_dict}}
 
     def _analyze_date(self, column):
         pass    
@@ -68,8 +76,8 @@ class ErrorDetection(EdaModule):
             match data_type:
                 case ColumnDataType.NUMERIC.value:
                     return self._act_numeric(column, analysis[column])
-                case ColumnDataType.STRING.value:
-                    return self._act_string(column, analysis[column])
+                case ColumnDataType.CATEGORICAL.value:
+                    return self._act_categorical(column, analysis[column])
                 case ColumnDataType.DATE.value:
                     return self._act_date(column, analysis[column])
                 case ColumnDataType.BOOLEAN.value:
@@ -93,8 +101,23 @@ class ErrorDetection(EdaModule):
         # default converter uses semantic parser's vectorized routine
         return parse_numeric_column(series, sample)
 
-    def _act_string(self, column, analysis):
-        pass
+    def _act_categorical(self, column, analysis):
+        """Replace categories whose observed frequency is below the configured
+        `category_threshold_percentage` with missing values (`pd.NA`).
+        """
+        series = self._data[column]
+
+        if self._value_convertor is not None:
+            return self._value_convertor(series, analysis)
+
+        freqs = analysis.get("frequencies", {}) or {}
+
+        threshold = self._danaleo_config.get("eda", {}).get("category_threshold_percentage", 0.01)
+        allowed = {k for k, v in freqs.items() if v >= float(threshold)}
+
+        mask = series.isin(allowed)
+
+        return series.where(mask, other=pd.NA)
 
     def _act_date(self, column, analysis):
         pass

@@ -2,7 +2,7 @@ from enum import Enum
 
 class ColumnDataType(Enum):
     NUMERIC = "numeric"
-    STRING = "string"
+    CATEGORICAL = "categorical"
     DATE = "date"
     BOOLEAN = "boolean"
 

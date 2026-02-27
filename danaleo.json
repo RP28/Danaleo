@@ -1,6 +1,7 @@
 {
     "eda": {
         "sample_size": 30,
+        "category_threshold_percentage": 0.01,
         "numeric_semantic_types": {
             "duration": {
                 "patterns": [
