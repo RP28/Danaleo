@@ -2,18 +2,15 @@ from .eda_module import EdaModule
 from .constants import ColumnDataType, DebuggerErrorMessages
 from typing import override
 import pandas as pd
-from pandas.api import types as pd_types
 import random
-from utils.json_utils import load_danaleo_json
 from utils.semantic_parser import parse_numeric_column
 
 class ErrorDetection(EdaModule):
 
     def __init__(self, params, data):
         super().__init__(params, data)
-        self._rows_drop_threshold_percentage = params.get("rows_drop_threshold", 0.3)
-        self._columns_drop_threshold_percentage = params.get("columns_drop_threshold", 0.3)
-        self._danaleo_config = load_danaleo_json()
+        self._analysis_sample_size = self._params.get("analysis_sample_size", 30)
+        self._category_threshold_percentage = self._params.get("category_threshold_percentage", 0.05)
         self._value_convertor = None
 
     @override
@@ -41,7 +38,7 @@ class ErrorDetection(EdaModule):
         series = self._data[column]
 
         # Fast path: already numeric dtype
-        if pd_types.is_numeric_dtype(series.dtype):
+        if pd.api.types.is_numeric_dtype(series.dtype):
             return {
                 column: {
                     "sample_non_convertible_values": [],
@@ -51,7 +48,7 @@ class ErrorDetection(EdaModule):
         converted = pd.to_numeric(series, errors="coerce")
         non_convertibles = series[converted.isna() & series.notna()]
         sample_non_convertible_values = random.sample(non_convertibles.tolist(), 
-                                        min(self._danaleo_config["eda"]["sample_size"], len(non_convertibles)))
+                                        min(self._analysis_sample_size, len(non_convertibles)))
         return {
             column: {
                 "sample_non_convertible_values": sample_non_convertible_values
@@ -126,8 +123,7 @@ class ErrorDetection(EdaModule):
 
         freqs = analysis.get("frequencies", {}) or {}
 
-        threshold = self._danaleo_config.get("eda", {}).get("category_threshold_percentage", 0.01)
-        allowed = {k for k, v in freqs.items() if v >= float(threshold)}
+        allowed = {k for k, v in freqs.items() if v >= float(self._category_threshold_percentage)}
 
         mask = series.isin(allowed)
 

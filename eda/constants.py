@@ -11,13 +11,17 @@ class DataAction(Enum):
     DROP_COLUMN = "drop_column"
     IMPUTE_VALUE = "impute_value"
 
+class ImputationStrategy(Enum):
+    MEAN = "mean"
+    MEDIAN = "median"
+
 class UserErrorMessages(Enum):
-    DATA_NOT_PD_DATAFRAME = "ERR01: Data not a pandas DataFrame or Series"
-    PARAMS_NOT_DICT = "ERR02: Params not a dictionary"
-    PARAMS_DATA_COLUMN_MISMATCH = "ERR03: Column '{column}' specified in params not found in data"
+    DATA_NOT_PD_DATAFRAME = "UERR01: Data not a pandas DataFrame or Series"
+    PARAMS_NOT_DICT = "UERR02: Params not a dictionary"
+    PARAMS_DATA_COLUMN_MISMATCH = "UERR03: Column '{column}' specified in params not found in data"
 
 class DebuggerErrorMessages(Enum):
-    UNSUPPORTED_DATA_TYPE = "ERR10: Unsupported data type for analysis"
+    UNSUPPORTED_DATA_TYPE = "DERR01: Unsupported data type for analysis"
 
 __all__ = [
     "ColumnDataType",
