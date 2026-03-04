@@ -1,15 +1,14 @@
 from .eda_module import EdaModule
 from typing import override
-from .constants import ImputationStrategy, ColumnDataType
+from .constants import ColumnDataType, DataAction
 import pandas as pd
 
 class MissingValueEvaluation(EdaModule):
 
     def __init__(self, params, data):
         super().__init__(params, data)
-        self._columns_drop_threshold_percentage = self._params.get("columns_drop_threshold_percentage", 0.3)
-        self._rows_drop_threshold_percentage = self._params.get("rows_drop_threshold_percentage", 0.3)
-        self._fill_strategy = ImputationStrategy(self._params.get("fill_strategy", "mean")) 
+        self._columns_drop_threshold_percentage = self._params.get("columns_drop_threshold_percentage", 0.6)
+        self._rows_drop_threshold_percentage = self._params.get("rows_drop_threshold_percentage", 0.6)
 
     @override
     def analyze(self):
@@ -18,8 +17,13 @@ class MissingValueEvaluation(EdaModule):
         for column in self._params.get("columns", {}).keys():
             series = self._data[column]
             missing_percentage = series.isna().mean()
+            iqr = 1.5 * (series.quantile(0.75) - series.quantile(0.25)) if self._params["columns"][column] == ColumnDataType.NUMERIC.value else None
             results[column] = {
-                "missing_percentage": missing_percentage
+                "missing_percentage": missing_percentage,
+                "data_type": self._params["columns"][column],
+                "skewness": series.skew() if self._params["columns"][column] == ColumnDataType.NUMERIC.value else None,
+                "kurtosis": series.kurtosis() if self._params["columns"][column] == ColumnDataType.NUMERIC.value else None,
+                "outliers_percentage": ((series < series.quantile(0.25) - iqr) | (series > series.quantile(0.75) + iqr)).mean() if self._params["columns"][column] == ColumnDataType.NUMERIC.value else None
             }
         return results
 
@@ -38,44 +42,52 @@ class MissingValueEvaluation(EdaModule):
 
         self._data.drop(index=rows_to_drop, inplace=True)
 
-        for column, data_type in self._params.get("columns", {}).items():
-            match data_type:
-                case ColumnDataType.NUMERIC.value:
-                    self._act_numeric(column, analysis)
-                case ColumnDataType.CATEGORICAL.value:
-                    self._act_categorical(column, analysis)
-                case _:
-                    raise ValueError(f"Unsupported data type for missing value evaluation: {data_type}")
+        for column in self._params.get("columns", {}).keys():
+            imputation_strategy = self.decide_imputation(analysis[column])
+            match imputation_strategy:
+                case DataAction.DROP_COLUMN.value:
+                    self._data.drop(columns=[column], inplace=True)
+                case DataAction.IMPUTE_MEAN_VALUE.value:
+                    fill_value = self._data[column].mean()
+                    self._data[column] = self._data[column].fillna(fill_value)
+                case DataAction.IMPUTE_MEDIAN_VALUE.value:
+                    fill_value = self._data[column].median()
+                    self._data[column] = self._data[column].fillna(fill_value)
+                case DataAction.IMPUTE_MODE_VALUE.value:
+                    mode_value = self._data[column].mode(dropna=True)
+                    if not mode_value.empty:
+                        fill_value = mode_value[0]
+                        self._data[column] = self._data[column].fillna(fill_value)
+                case DataAction.IMPUTE_NEW_CATEGORY.value:
+                    self._data[column] = self._data[column].fillna("Missing")
 
         return self._data
     
-    def _act_numeric(self, column, analysis):
-        missing_pct = analysis[column]["missing_percentage"]
+    def decide_imputation(self, meta):
+        m = meta["missing_percentage"]
+        dtype = meta["data_type"]
+        skew = meta["skewness"]
+        kurt = meta["kurtosis"]
+        out = meta["outliers_percentage"]
 
-        if missing_pct > self._columns_drop_threshold_percentage:
-            self._data.drop(columns=[column], inplace=True)
-        else:
-            if self._fill_strategy == ImputationStrategy.MEAN:
-                fill_value = self._data[column].mean()
-            elif self._fill_strategy == ImputationStrategy.MEDIAN:
-                fill_value = self._data[column].median()
-            elif self._fill_strategy == ImputationStrategy.MODE:
-                mode_value = self._data[column].mode(dropna=True)
-                if mode_value.empty:
-                    raise ValueError(f"No mode found for column {column} during imputation")
-                fill_value = mode_value[0]
-            else:
-                raise ValueError(f"Unsupported fill strategy: {self._fill_strategy}")
+        if m >= self._columns_drop_threshold_percentage:
+            return DataAction.DROP_COLUMN.value
 
-            self._data[column] = self._data[column].fillna(fill_value)
+        if dtype == ColumnDataType.NUMERIC.value:
+            if out >= 0.05:
+                return DataAction.IMPUTE_MEDIAN_VALUE.value
+            if abs(skew) <= 0.5 and kurt <= 3.5:
+                return DataAction.IMPUTE_MEAN_VALUE.value
+            return DataAction.IMPUTE_MEDIAN_VALUE.value
 
-    def _act_categorical(self, column, analysis):
-        missing_pct = analysis[column]["missing_percentage"]
+        if dtype == ColumnDataType.CATEGORICAL.value:
+            if m < 0.15:
+                return DataAction.IMPUTE_MODE_VALUE.value
+            return DataAction.IMPUTE_NEW_CATEGORY.value
 
-        if missing_pct > self._columns_drop_threshold_percentage:
-            self._data.drop(columns=[column], inplace=True)
-        else:
-            mode_value = self._data[column].mode(dropna=True)
-            if not mode_value.empty:
-                fill_value = mode_value[0]
-                self._data[column] = self._data[column].fillna(fill_value)
+        if dtype == ColumnDataType.BOOLEAN.value:
+            if m < 0.20:
+                return DataAction.IMPUTE_MODE_VALUE.value
+            return DataAction.IMPUTE_NEW_CATEGORY.value
+
+        return DataAction.IMPUTE_MEDIAN_VALUE.value

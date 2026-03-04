@@ -23,9 +23,8 @@ print(converted.shape)
 params = {"columns": {"Categorical": ColumnDataType.CATEGORICAL.value, 
                       "Distance": ColumnDataType.NUMERIC.value, 
                       "Weight": ColumnDataType.NUMERIC.value},
-                      "columns_drop_threshold_percentage": 0.04,
-                      "rows_drop_threshold_percentage": 0.04,
-                      "fill_strategy": "median"}
+                      "columns_drop_threshold_percentage": 0.6,
+                      "rows_drop_threshold_percentage": 0.6}
 mve = MissingValueEvaluation(params, converted)
 analysis = mve.analyze()
 print(analysis)

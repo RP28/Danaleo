@@ -10,7 +10,6 @@ class EdaModule(ABC):
         
         if params is None and not isinstance(params, dict):
             raise ValueError(UserErrorMessages.PARAMS_NOT_DICT.value)
-        # assign before validation so _validate_params can access params/data
         self._params = params
         self._data = data
 
