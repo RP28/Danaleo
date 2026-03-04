@@ -18,15 +18,17 @@ analysis = ed.analyze()
 print(analysis)
 converted = ed.act(analysis)
 print(converted)
+print(converted.shape)
 
 params = {"columns": {"Categorical": ColumnDataType.CATEGORICAL.value, 
                       "Distance": ColumnDataType.NUMERIC.value, 
                       "Weight": ColumnDataType.NUMERIC.value},
-                      "columns_drop_threshold_percentage": 0.4,
-                      "rows_drop_threshold_percentage": 0.4,
-                      "fill_strategy": "mean"}
+                      "columns_drop_threshold_percentage": 0.04,
+                      "rows_drop_threshold_percentage": 0.04,
+                      "fill_strategy": "median"}
 mve = MissingValueEvaluation(params, converted)
 analysis = mve.analyze()
 print(analysis)
 cleaned = mve.act(analysis)
 print(cleaned)
+print(cleaned.shape)

@@ -14,6 +14,7 @@ class DataAction(Enum):
 class ImputationStrategy(Enum):
     MEAN = "mean"
     MEDIAN = "median"
+    MODE = "mode"
 
 class UserErrorMessages(Enum):
     DATA_NOT_PD_DATAFRAME = "UERR01: Data not a pandas DataFrame or Series"
