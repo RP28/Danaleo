@@ -10,6 +10,13 @@ class MissingValueEvaluation(EdaModule):
         self._columns_drop_threshold_percentage = self._params.get("columns_drop_threshold_percentage", 0.6)
         self._rows_drop_threshold_percentage = self._params.get("rows_drop_threshold_percentage", 0.6)
 
+        self._numeric_outlier_threshold = self._params.get("numeric_outlier_threshold", 0.05)
+        self._numeric_skew_symmetric_threshold = self._params.get("numeric_skew_symmetric_threshold", 0.5)
+        self._numeric_kurtosis_normal_threshold = self._params.get("numeric_kurtosis_normal_threshold", 3.5)
+
+        self._categorical_mode_missing_threshold = self._params.get("categorical_mode_missing_threshold", 0.15)
+        self._boolean_mode_missing_threshold = self._params.get("boolean_mode_missing_threshold", 0.20)
+
     @override
     def analyze(self):
         """Return percentage of missing values for each column specified in params."""
@@ -74,20 +81,30 @@ class MissingValueEvaluation(EdaModule):
             return DataAction.DROP_COLUMN.value
 
         if dtype == ColumnDataType.NUMERIC.value:
-            if out >= 0.05:
+
+            if out >= self._numeric_outlier_threshold:
                 return DataAction.IMPUTE_MEDIAN_VALUE.value
-            if abs(skew) <= 0.5 and kurt <= 3.5:
+
+            if (
+                abs(skew) <= self._numeric_skew_symmetric_threshold
+                and kurt <= self._numeric_kurtosis_normal_threshold
+            ):
                 return DataAction.IMPUTE_MEAN_VALUE.value
+
             return DataAction.IMPUTE_MEDIAN_VALUE.value
 
         if dtype == ColumnDataType.CATEGORICAL.value:
-            if m < 0.15:
+
+            if m < self._categorical_mode_missing_threshold:
                 return DataAction.IMPUTE_MODE_VALUE.value
+
             return DataAction.IMPUTE_NEW_CATEGORY.value
 
         if dtype == ColumnDataType.BOOLEAN.value:
-            if m < 0.20:
+
+            if m < self._boolean_mode_missing_threshold:
                 return DataAction.IMPUTE_MODE_VALUE.value
+
             return DataAction.IMPUTE_NEW_CATEGORY.value
 
         return DataAction.IMPUTE_MEDIAN_VALUE.value
